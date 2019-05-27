@@ -1,0 +1,19 @@
+{
+	"name": "sugyiama",
+	"version": "1.0.0",
+	"main": "dist/index.js",
+	"module": "dist/index.es.js",
+	"source": "index.js",
+	"author": "SubHero <github@bvdsoftware.be>",
+	"license": "MIT",
+	"dependencies": {},
+	"devDependencies": {
+		"esm": "^3.2.25",
+		"parcel-bundler": "^1.12.3",
+		"roller": "https://github.com/subhero24/roller.git#^v1.0.0"
+	},
+	"scripts": {
+		"build": "yarn run roller",
+		"prepare": "yarn run build"
+	}
+}
