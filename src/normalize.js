@@ -1,7 +1,12 @@
 // Normalize adds dummy nodes in the graph to avoid links spanning multiple levels
-export default function(graph, dummyFunc = () => ({})) {
-	let nodes = graph.values();
+export default function(graph, options = {}) {
+	let defaults = {
+		dummyFunc: () => ({}),
+	};
 
+	let { dummyFunc } = { ...defaults, ...options };
+
+	let nodes = graph.values();
 	for (let parent of nodes) {
 		for (let child of parent.children) {
 			let distance = child.level - parent.level;

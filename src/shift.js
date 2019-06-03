@@ -14,6 +14,4 @@ export default function(graph) {
 	let center = (maxY - minY) / 2 + minY;
 
 	for (let node of nodes) node.y -= center;
-
-	return nodes;
 }

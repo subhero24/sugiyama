@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"main": "dist/index.js",
 	"module": "dist/index.es.js",
-	"source": "index.js",
+	"source": "src/index.js",
 	"author": "SubHero <github@bvdsoftware.be>",
 	"license": "MIT",
 	"dependencies": {},
@@ -14,6 +14,7 @@
 	},
 	"scripts": {
 		"build": "yarn run roller",
-		"prepare": "yarn run build"
+		"prepare": "yarn run build",
+		"develop": "yarn run parcel src/render/index.html --out-dir build  --open"
 	}
 }
