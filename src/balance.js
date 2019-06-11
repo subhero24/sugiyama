@@ -1,7 +1,6 @@
 // Balance is an iterative method to adjust the position (but not order) to improve graph aesthetics
 
 const FORCE = 0.1;
-const MIN_DISTANCE = 1;
 
 // Limiting the max force is necessary because the constraint of the minimum distance
 // displaces siblings to account for this distance, which can increase spring lengths,
@@ -78,7 +77,16 @@ export default function(graph, options = {}) {
 			let gradients = new Map();
 			for (let node of layer) {
 				gradients.set(node, 0);
-				for (let neighbour of [...node.children, ...node.parents]) {
+
+				// dummy nodes should only be attracted to its parents as this promotes
+				// the bending of the multilevel edges to occur at the ending
+				let neighbours = node.dummy ? node.parents : [...node.children, ...node.parents];
+				let neighboursAreDummies = neighbours.every(n => n.dummy);
+
+				for (let neighbour of neighbours) {
+					// Only use non-dummy node for attraction, unless all neighbouring nodes are dummies
+					if (!neighboursAreDummies && neighbour.dummy) continue;
+
 					let force = (previous.get(neighbour) - previous.get(node)) * FORCE;
 					gradients.set(node, gradients.get(node) + force);
 				}
@@ -117,6 +125,26 @@ export default function(graph, options = {}) {
 			// Translate all nodes with their calculated gradient
 			for (let [node, gradient] of gradients) node.y += gradient;
 		}
+	}
+
+	if (nodes.length) {
+		let bounds = {
+			minX: Infinity,
+			minY: Infinity,
+			maxX: -Infinity,
+			maxY: -Infinity,
+		};
+		for (let node of nodes) {
+			let { width, height } = dimensions.get(node);
+
+			bounds = {
+				minX: Math.min(bounds.minX, node.x - width / 2 - margin),
+				minY: Math.min(bounds.minY, node.y - height / 2 - margin),
+				maxX: Math.max(bounds.maxX, node.x + width / 2 + margin),
+				maxY: Math.max(bounds.maxY, node.y + height / 2 + margin),
+			};
+		}
+		graph.bounds = bounds;
 	}
 
 	return nodes;
