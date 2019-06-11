@@ -11,29 +11,28 @@ function shouldSwap(edges1, edges2) {
 }
 
 export default function(graph) {
-	let nodes = Array.from(graph.values());
-
 	// Start with orphans, and position them in order they are defined
 	let level = 0;
-	let previous = nodes.filter(n => n.level === 0);
-	for (let [index, node] of previous.entries()) {
-		node.order = index;
+	let previous = graph.nodes.filter(n => n.location[0] === level);
+	for (let i = 0; i < previous.length; ++i) {
+		previous[i].location[1] = i;
 	}
 
 	while (true) {
 		level++;
-		let layer = nodes.filter(n => n.level === level);
+		let layer = graph.nodes.filter(n => n.location[0] === level);
 
 		if (layer.length === 0) break;
 		if (layer.length === 1) {
-			layer[0].order = 0;
+			layer[0].location[1] = 0;
 			continue;
 		}
 
-		//  Calculate all preferred node positions as average of parent positions
+		// Calculate all preferred node positions as average of parent positions
+		// as initial estimation of the order
 		let order = new Map();
 		for (let node of layer) {
-			let sum = node.parents.reduce((s, p) => (s += p.order), 0);
+			let sum = node.parents.reduce((s, p) => (s += p.location[1]), 0);
 			let avg = sum / node.parents.length;
 			order.set(node, avg);
 		}
@@ -62,8 +61,8 @@ export default function(graph) {
 			}
 		}
 
-		for (let [index, node] of layer.entries()) {
-			node.order = index;
+		for (let i = 0; i < layer.length; ++i) {
+			layer[i].location[1] = i;
 		}
 
 		previous = layer;

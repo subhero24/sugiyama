@@ -1,8 +1,7 @@
 // This cleans up unnecessary edges which connects two nodes
 // that are already connected through intermediate nodes
 export default function(graph) {
-	let nodes = graph.values();
-	for (let node of nodes) {
+	for (let node of graph.nodes) {
 		for (let parent of node.parents) {
 			for (let parentsibling of node.parents) {
 				if (parentsibling === parent) continue;

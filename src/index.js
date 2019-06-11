@@ -5,17 +5,19 @@ import minimize from './minimize';
 import normalize from './normalize';
 import calculateOrder from './calculate-order';
 import calculateLevel from './calculate-level';
+import calculateBounds from './calculate-bounds';
 
-export default function(nodes, fns) {
-	let { childrenFunc, parentFunc, dummyFunc, width, height, margin, iterations } = fns;
+export default function(elements, fns) {
+	let { childrenFunc, parentFunc, dimensions, margins, iterations } = fns;
 
-	let graph = topology(nodes, { childrenFunc, parentFunc });
+	let graph = topology(elements, { childrenFunc, parentFunc });
 
 	minimize(graph);
 	calculateLevel(graph);
-	normalize(graph, { dummyFunc });
+	normalize(graph);
 	calculateOrder(graph);
-	balance(graph, { width, height, margin, iterations });
+	balance(graph, { dimensions, margins, iterations });
+	calculateBounds(graph, { margins });
 	shift(graph);
 
 	return graph;

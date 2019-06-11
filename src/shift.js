@@ -2,15 +2,15 @@
 // that is closest to the vertical center of the graph
 
 export default function(graph) {
-	let { minY, maxY } = graph.bounds;
-	let nodes = Array.from(graph.values());
+	let { bounds, nodes } = graph;
+	let { minY, maxY } = bounds;
 
 	let origin;
 	let center = (maxY + minY) / 2;
 	let distance = Infinity;
 	for (let node of nodes) {
-		if (node.level === 0) {
-			let dist = Math.abs(node.y - center);
+		if (node.location[0] === 0) {
+			let dist = Math.abs(node.position[1] - center);
 			if (dist < distance) {
 				origin = node;
 				distance = dist;
@@ -19,9 +19,9 @@ export default function(graph) {
 	}
 
 	if (origin) {
-		let shift = origin.y;
+		let shift = origin.position[1];
 		for (let node of nodes) {
-			node.y -= shift;
+			node.position[1] -= shift;
 		}
 		graph.bounds.minY -= shift;
 		graph.bounds.maxY -= shift;

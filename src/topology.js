@@ -52,7 +52,7 @@ let descendents = node => {
 	return node.descendents;
 };
 
-export default function(nodes, fns) {
+export default function(elements, fns) {
 	let { childFunc, parentFunc } = fns;
 
 	if (childFunc == undefined && parentFunc == undefined) {
@@ -62,14 +62,14 @@ export default function(nodes, fns) {
 	// Topology is a map linking the originial node with its corresponding graph information object
 	// specifying parents, children, ancestors, descendents, position, ...
 	let topology = new Map();
-	for (let key of nodes) {
-		let value = {
-			value: key,
+	for (let element of elements) {
+		let node = {
+			element,
 			parents: [],
 			children: [],
 		};
 
-		topology.set(key, value);
+		topology.set(element, node);
 	}
 
 	if (parentFunc && childFunc) {
@@ -78,23 +78,26 @@ export default function(nodes, fns) {
 		// First we have to loop through all nodes as we can only go "up" the graph
 		// and can therefore not know all children of a node while traversing it for the first time
 
-		for (let [node, nodeT] of topology.entries()) {
-			let parents = parentFunc(node);
+		for (let [element, node] of topology) {
+			let parents = parentFunc(element);
 			if (parents != undefined && parents.length !== 0) {
 				for (let parent of parents) {
-					let parentT = topology.get(parent);
-					if (!nodeT.parents.includes(parentT)) nodeT.parents.push(parentT);
-					if (!parentT.children.includes(nodeT)) parentT.children.push(nodeT);
+					let parentNode = topology.get(parent);
+					if (!node.parents.includes(parentNode)) node.parents.push(parentNode);
+					if (!parentNode.children.includes(node)) parentNode.children.push(node);
 				}
 			}
 		}
 
-		for (let nodeT of topology.values()) {
-			ancestors(nodeT);
-			descendents(nodeT);
+		// After parent-child relations are all set, we can find the ancestors-descendents for all nodes
+		let nodes = [];
+		for (let [element, node] of topology) {
+			ancestors(node);
+			descendents(node);
+			nodes.push(node);
 		}
 
-		return topology;
+		return { nodes };
 	} else if (childFunc) {
 		// TODO
 		throw new Error('childFunc not implemented');

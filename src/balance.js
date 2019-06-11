@@ -6,67 +6,76 @@ const FORCE = 0.1;
 // displaces siblings to account for this distance, which can increase spring lengths,
 // which can increase the force of the springs and make the solution unstable
 
-export default function(graph, options = {}) {
-	let { width, height, margin, iterations } = options;
+const isDummy = node => node.element == undefined;
 
-	if (width == undefined) width = 0;
-	if (height == undefined) height = 0;
-	if (margin == undefined) margin = 1;
+export default function(graph, options = {}) {
+	let { dimensions, margins, iterations } = options;
+
+	if (margins == undefined) margins = 1;
+	if (dimensions == undefined) dimensions = 0;
 	if (iterations == undefined) iterations = 100;
 
-	let dimensions = new Map();
-	for (let [key, value] of graph.entries()) {
-		dimensions.set(value, {
-			width: typeof width === 'function' ? width(key) || 0 : width,
-			height: typeof height === 'function' ? height(key) || 0 : height,
-		});
+	// set margins needed to balance the graph
+	if (typeof margins === 'number') {
+		margins = [margins, margins];
 	}
 
-	let nodes = Array.from(graph.values());
+	// Set the node dimensions needed to balance the graph
+	for (let node of graph.nodes) {
+		let dimension = dimensions;
+		if (typeof dimension === 'function') {
+			dimension = dimension(node.element);
+		}
+		if (typeof dimension === 'number') {
+			dimension = [dimension, dimension];
+		}
+
+		node.dimensions = dimension;
+	}
 
 	// Loop over all nodes and group them by level
 	let layers = [];
-	for (let node of nodes) {
-		if (layers[node.level] == undefined) {
-			layers[node.level] = [];
+	for (let node of graph.nodes) {
+		if (layers[node.location[0]] == undefined) {
+			layers[node.location[0]] = [];
 		}
 
-		layers[node.level].push(node);
+		layers[node.location[0]].push(node);
 	}
 
-	let x = margin;
+	// Loop through all levels and set x and y position before balancing
+	let x = margins[0];
 	for (let level = 0; level < layers.length; ++level) {
 		let y = 0;
-		let nodes = layers[level].sort((a, b) => a.order - b.order);
-		let levelwidth = Math.max(...nodes.map(n => dimensions.get(n).width));
+		let nodes = layers[level].sort((a, b) => a.location[1] - b.location[1]);
+		let levelwidth = Math.max(...nodes.map(n => n.dimensions[0]));
 		for (let node of layers[level]) {
-			let nodeheight = dimensions.get(node).height;
-			node.x = x + levelwidth / 2;
-			node.y = y + nodeheight / 2;
+			let [width, height] = node.dimensions;
+			node.position = [x + width / 2, y + height / 2];
 
-			y = y + nodeheight + margin;
+			y = y + height + margins[1];
 		}
 
 		layers[level] = nodes;
-		x = x + levelwidth + margin;
+		x = x + levelwidth + margins[0];
 	}
 
 	let previous = new Map();
 	for (let i = 0; i < iterations; ++i) {
-		// Calculate properties dependent on old coordinates, ie velocity
+		// Calculate velocities dependent on old coordinates
 		let velocities = new Map();
-		for (let node of nodes) {
-			let oldY = previous.get(node);
-			if (oldY == undefined) {
+		for (let node of graph.nodes) {
+			let y = previous.get(node);
+			if (y == undefined) {
 				velocities.set(node, 0);
 			} else {
-				velocities.set(node, node.y - oldY);
+				velocities.set(node, node.position[1] - y);
 			}
 		}
 
 		// Update old coordinates
-		for (let node of nodes) {
-			previous.set(node, node.y);
+		for (let node of graph.nodes) {
+			previous.set(node, node.position[1]);
 		}
 
 		// Calculate layer node gradients
@@ -78,14 +87,14 @@ export default function(graph, options = {}) {
 			for (let node of layer) {
 				gradients.set(node, 0);
 
-				// dummy nodes should only be attracted to its parents as this promotes
+				// Dummy nodes should only be attracted to its parents as this promotes
 				// the bending of the multilevel edges to occur at the ending
-				let neighbours = node.dummy ? node.parents : [...node.children, ...node.parents];
-				let neighboursAreDummies = neighbours.every(n => n.dummy);
+				let neighbours = isDummy(node) ? node.parents : [...node.children, ...node.parents];
+				let neighboursAreDummies = neighbours.every(isDummy);
 
 				for (let neighbour of neighbours) {
 					// Only use non-dummy node for attraction, unless all neighbouring nodes are dummies
-					if (!neighboursAreDummies && neighbour.dummy) continue;
+					if (!neighboursAreDummies && isDummy(neighbour)) continue;
 
 					let force = (previous.get(neighbour) - previous.get(node)) * FORCE;
 					gradients.set(node, gradients.get(node) + force);
@@ -98,14 +107,14 @@ export default function(graph, options = {}) {
 			for (j = 0; j < layer.length; ++j) {
 				// debugger;
 				let node = layer[j];
-				let height = dimensions.get(node).height;
-				let target = node.y + gradients.get(node);
+				let height = node.dimensions[1];
+				let target = node.position[1] + gradients.get(node);
 				let lowerbound = target - height / 2;
 				let upperbound = target + height / 2;
 
 				if (j === 0 || lowerbound < blockBound) {
 					// If the node's target is too close to the previous node, just continue grouping nodes
-					blockBound = Math.max(blockBound, blockBound + margin, upperbound + margin);
+					blockBound = Math.max(blockBound, blockBound + margins[1], upperbound + margins[1]);
 				} else {
 					// If the node's target will be too far away to belongs to the group, group the previous nodes and start a new group
 					let block = layer.slice(blockIndex, j);
@@ -113,7 +122,7 @@ export default function(graph, options = {}) {
 					for (let node of block) gradients.set(node, average);
 
 					blockIndex = j;
-					blockBound = upperbound + margin;
+					blockBound = upperbound + margins[1];
 				}
 			}
 
@@ -123,29 +132,9 @@ export default function(graph, options = {}) {
 			for (let node of block) gradients.set(node, average);
 
 			// Translate all nodes with their calculated gradient
-			for (let [node, gradient] of gradients) node.y += gradient;
+			for (let [node, gradient] of gradients) node.position[1] += gradient;
 		}
 	}
 
-	if (nodes.length) {
-		let bounds = {
-			minX: Infinity,
-			minY: Infinity,
-			maxX: -Infinity,
-			maxY: -Infinity,
-		};
-		for (let node of nodes) {
-			let { width, height } = dimensions.get(node);
-
-			bounds = {
-				minX: Math.min(bounds.minX, node.x - width / 2 - margin),
-				minY: Math.min(bounds.minY, node.y - height / 2 - margin),
-				maxX: Math.max(bounds.maxX, node.x + width / 2 + margin),
-				maxY: Math.max(bounds.maxY, node.y + height / 2 + margin),
-			};
-		}
-		graph.bounds = bounds;
-	}
-
-	return nodes;
+	return graph;
 }

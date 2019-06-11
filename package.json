@@ -8,6 +8,7 @@
 	"license": "MIT",
 	"dependencies": {},
 	"devDependencies": {
+		"@babel/core": "^7.4.5",
 		"esm": "^3.2.25",
 		"parcel-bundler": "^1.12.3",
 		"roller": "https://github.com/subhero24/roller.git#^v1.0.0"

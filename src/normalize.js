@@ -1,15 +1,8 @@
 // Normalize adds dummy nodes in the graph to avoid links spanning multiple levels
-export default function(graph, options = {}) {
-	let defaults = {
-		dummyFunc: () => ({}),
-	};
-
-	let { dummyFunc } = { ...defaults, ...options };
-
-	let nodes = graph.values();
-	for (let parent of nodes) {
+export default function(graph) {
+	for (let parent of graph.nodes) {
 		for (let child of parent.children) {
-			let distance = child.level - parent.level;
+			let distance = child.location[0] - parent.location[0];
 			if (distance > 1) {
 				// If node and child span multiple levels, remove the relation between the two
 				// A new node will be inserted to represent the relation
@@ -20,13 +13,13 @@ export default function(graph, options = {}) {
 				let prev = parent;
 				for (let i = 0; i < distance - 1; ++i) {
 					let node = {
+						element: null,
 						parents: [],
 						children: [],
-						level: parent.level + i + 1,
-						value: dummyFunc(i, parent, child),
+						location: [parent.location[0] + i + 1, 0],
 					};
 
-					graph.set(node.value, node);
+					graph.nodes.push(node);
 					node.parents.push(prev);
 					prev.children.push(node);
 
