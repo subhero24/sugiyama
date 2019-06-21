@@ -89,12 +89,16 @@ export default function(graph, options = {}) {
 
 				// Dummy nodes should only be attracted to its parents as this promotes
 				// the bending of the multilevel edges to occur at the ending
-				let neighbours = isDummy(node) ? node.parents : [...node.children, ...node.parents];
-				let neighboursAreDummies = neighbours.every(isDummy);
+				// let neighbours = [...node.parents, ...node.children];
+				// let neighbours = node.parents.length ? [...node.parents] : [...node.children];
+				let neighbours = node.children.length ? node.children : node.parents;
+
+				// let neighbours = isDummy(node) ? node.parents : [...node.children, ...node.parents];
+				// let neighboursAreDummies = neighbours.every(isDummy);
 
 				for (let neighbour of neighbours) {
 					// Only use non-dummy node for attraction, unless all neighbouring nodes are dummies
-					if (!neighboursAreDummies && isDummy(neighbour)) continue;
+					// if (!neighboursAreDummies && isDummy(neighbour)) continue;
 
 					let force = (previous.get(neighbour) - previous.get(node)) * FORCE;
 					gradients.set(node, gradients.get(node) + force);

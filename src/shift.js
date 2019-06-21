@@ -2,6 +2,8 @@
 // that is closest to the vertical center of the graph
 
 export default function(graph) {
+	if (graph.bounds == undefined) return graph;
+
 	let { bounds, nodes } = graph;
 	let { minY, maxY } = bounds;
 

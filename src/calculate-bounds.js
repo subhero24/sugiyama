@@ -1,6 +1,4 @@
 export default (graph, options = {}) => {
-	if (!graph.nodes.length) return graph;
-
 	let { margins } = options;
 
 	if (margins == undefined) margins = 1;
@@ -26,6 +24,10 @@ export default (graph, options = {}) => {
 			maxX: Math.max(graph.bounds.maxX, node.position[0] + width / 2 + margins[0]),
 			maxY: Math.max(graph.bounds.maxY, node.position[1] + height / 2 + margins[1]),
 		};
+	}
+
+	if (graph.bounds == undefined) {
+		graph.bounds = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
 	}
 
 	return graph;

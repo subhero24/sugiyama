@@ -19,6 +19,7 @@ export default function(graph) {
 	}
 
 	while (true) {
+		debugger;
 		level++;
 		let layer = graph.nodes.filter(n => n.location[0] === level);
 

@@ -3,6 +3,12 @@
 export default function(graph) {
 	for (let node of graph.nodes) {
 		if (node.parents.length === 0) {
+			node.location = [0, 0];
+		}
+	}
+
+	for (let node of graph.nodes) {
+		if (node.parents.length === 0) {
 			setLevel(node, 0);
 		}
 	}
