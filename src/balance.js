@@ -84,6 +84,7 @@ export default function(graph, options = {}) {
 
 			// Calculate gradients according to neighbouring node springs
 			let gradients = new Map();
+
 			for (let node of layer) {
 				gradients.set(node, 0);
 
@@ -91,7 +92,7 @@ export default function(graph, options = {}) {
 				// the bending of the multilevel edges to occur at the ending
 				// let neighbours = [...node.parents, ...node.children];
 				// let neighbours = node.parents.length ? [...node.parents] : [...node.children];
-				let neighbours = node.children.length ? node.children : node.parents;
+				let neighbours = node.parents.length ? node.parents : node.children;
 
 				// let neighbours = isDummy(node) ? node.parents : [...node.children, ...node.parents];
 				// let neighboursAreDummies = neighbours.every(isDummy);
