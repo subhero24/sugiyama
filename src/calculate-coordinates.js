@@ -1,13 +1,13 @@
-// Balance is an iterative method to adjust the position (but not order) to improve graph aesthetics
+// An iterative method to adjust the position (but not order) to improve graph aesthetics
+// Happens in 2 phases
+// First half of the iterations, all nodes are connected and pull on each other
+// Second half of the iterations, only nodes that have each other as only dependency pull on each otther
 
-const WEAK_FORCE = 0.01; // Must be smaller than 1 to avoid divergence
-const STRONG_FORCE = 0.01; //0.1;
+const FORCE = 0.1; // Must be smaller than 1 to avoid divergence
 
 // Limiting the max force is necessary because the constraint of the minimum distance
 // displaces siblings to account for this distance, which can increase spring lengths,
 // which can increase the force of the springs and make the solution unstable
-
-const isDummy = node => node.element == undefined;
 
 export default function(graph, options = {}) {
 	let { dimensions, margins, iterations } = options;
@@ -61,25 +61,8 @@ export default function(graph, options = {}) {
 		x = x + levelwidth + margins[0];
 	}
 
-	let previous = new Map();
+	// Iterate, find gradients
 	for (let i = 0; i < iterations; ++i) {
-		// Calculate velocities dependent on old coordinates
-		// let velocities = new Map();
-		// for (let node of graph.nodes) {
-		// 	let y = previous.get(node);
-		// 	if (y == undefined) {
-		// 		velocities.set(node, 0);
-		// 	} else {
-		// 		velocities.set(node, node.position[1] - y);
-		// 	}
-		// }
-
-		// Update old coordinates
-		for (let node of graph.nodes) {
-			previous.set(node, node.position[1]);
-		}
-
-		// Calculate gradients according to neighbouring node springs
 		let gradients = new Map();
 		for (let level = 0; level < layers.length; level++) {
 			let layer = layers[level];
@@ -87,39 +70,29 @@ export default function(graph, options = {}) {
 			for (let node of layer) {
 				gradients.set(node, 0);
 
-				// let neighbours = [...node.parents, ...node.children];
-
-				// One to one relations take priority. Parents take priority over children.
-				// let neighbours;
-				// let oneToOneParent = node.parents.length === 1 && node.parents[0].children.length === 1;
-				// let oneToOneChild = node.children.length === 1 && node.children[0].parents.length === 1;
-				// if (oneToOneParent && oneToOneChild) {
-				// 	neighbours = [...node.parents, ...node.children];
-				// } else if (oneToOneParent) {
-				// 	neighbours = node.parents;
-				// } else if (oneToOneChild) {
-				// 	neighbours = node.children;
-				// } else if (node.parents.length) {
-				// 	neighbours = node.parents;
-				// } else {
-				// 	neighbours = node.children;
-				// }
-
-				for (let neighbour of node.parents) {
-					let displacement = previous.get(neighbour) - previous.get(node);
-					let importantRelation = node.parents.length === 1 && node.parents[0].children.length === 1;
-					let force = displacement * (importantRelation ? STRONG_FORCE : WEAK_FORCE);
-					gradients.set(node, gradients.get(node) + force);
+				let neighbours = [];
+				if (i < iterations / 2) {
+					neighbours = [...node.parents, ...node.children];
+				} else {
+					if (node.parents.length === 1 && node.children.length === 0) {
+						neighbours = node.parents;
+					} else if (node.parents.length === 0 && node.children.length === 1) {
+						neighbours = node.children;
+					} else if (node.children.length === 1 && node.children[0].parents.length === 1) {
+						neighbours = node.children;
+					} else if (node.parents.length === 1 && node.parents[0].children.length === 1) {
+						neighbours = node.parents;
+					}
 				}
-				for (let neighbour of node.children) {
-					let displacement = previous.get(neighbour) - previous.get(node);
-					let importantRelation = node.children.length === 1 && node.children[0].parents.length === 1;
-					let force = displacement * (importantRelation ? STRONG_FORCE : WEAK_FORCE);
+
+				for (let neighbour of neighbours) {
+					let force = (neighbour.position[1] - node.position[1]) * FORCE;
 					gradients.set(node, gradients.get(node) + force);
 				}
 			}
 		}
 
+		// Find gradient collisions that need to displace multiple blocks with same gradient
 		for (let level = 0; level < layers.length; level++) {
 			let layer = layers[level];
 
@@ -127,7 +100,6 @@ export default function(graph, options = {}) {
 			let blockIndex = 0;
 			let blockBound = -Infinity;
 			for (j = 0; j < layer.length; ++j) {
-				// debugger;
 				let node = layer[j];
 				let height = node.dimensions[1];
 				let target = node.position[1] + gradients.get(node);
@@ -136,7 +108,7 @@ export default function(graph, options = {}) {
 
 				if (j === 0 || lowerbound < blockBound) {
 					// If the node's target is too close to the previous node, just continue grouping nodes
-					blockBound = Math.max(blockBound, blockBound + margins[1], upperbound + margins[1]);
+					blockBound = Math.max(blockBound, blockBound + height + margins[1], upperbound + margins[1]);
 				} else {
 					// If the node's target will be too far away to belongs to the group, group the previous nodes and start a new group
 					let block = layer.slice(blockIndex, j);
@@ -156,14 +128,6 @@ export default function(graph, options = {}) {
 
 		// Translate all nodes with their calculated gradient
 		for (let [node, gradient] of gradients) node.position[1] += gradient;
-
-		// if (i === 100) {
-		// 	debugger;
-		// }
-		// console.log('----');
-		// for (let [node, gradient] of gradients.entries()) {
-		// 	console.log(node.element && node.element.description, gradient.toFixed(2));
-		// }
 	}
 
 	return graph;
