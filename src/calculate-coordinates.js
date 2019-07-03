@@ -1,6 +1,7 @@
 // Balance is an iterative method to adjust the position (but not order) to improve graph aesthetics
 
-const FORCE = 0.1;
+const WEAK_FORCE = 0.01; // Must be smaller than 1 to avoid divergence
+const STRONG_FORCE = 0.01; //0.1;
 
 // Limiting the max force is necessary because the constraint of the minimum distance
 // displaces siblings to account for this distance, which can increase spring lengths,
@@ -63,48 +64,64 @@ export default function(graph, options = {}) {
 	let previous = new Map();
 	for (let i = 0; i < iterations; ++i) {
 		// Calculate velocities dependent on old coordinates
-		let velocities = new Map();
-		for (let node of graph.nodes) {
-			let y = previous.get(node);
-			if (y == undefined) {
-				velocities.set(node, 0);
-			} else {
-				velocities.set(node, node.position[1] - y);
-			}
-		}
+		// let velocities = new Map();
+		// for (let node of graph.nodes) {
+		// 	let y = previous.get(node);
+		// 	if (y == undefined) {
+		// 		velocities.set(node, 0);
+		// 	} else {
+		// 		velocities.set(node, node.position[1] - y);
+		// 	}
+		// }
 
 		// Update old coordinates
 		for (let node of graph.nodes) {
 			previous.set(node, node.position[1]);
 		}
 
-		// Calculate layer node gradients
+		// Calculate gradients according to neighbouring node springs
+		let gradients = new Map();
 		for (let level = 0; level < layers.length; level++) {
 			let layer = layers[level];
-
-			// Calculate gradients according to neighbouring node springs
-			let gradients = new Map();
 
 			for (let node of layer) {
 				gradients.set(node, 0);
 
-				// Dummy nodes should only be attracted to its parents as this promotes
-				// the bending of the multilevel edges to occur at the ending
 				// let neighbours = [...node.parents, ...node.children];
-				// let neighbours = node.parents.length ? [...node.parents] : [...node.children];
-				let neighbours = node.parents.length ? node.parents : node.children;
 
-				// let neighbours = isDummy(node) ? node.parents : [...node.children, ...node.parents];
-				// let neighboursAreDummies = neighbours.every(isDummy);
+				// One to one relations take priority. Parents take priority over children.
+				// let neighbours;
+				// let oneToOneParent = node.parents.length === 1 && node.parents[0].children.length === 1;
+				// let oneToOneChild = node.children.length === 1 && node.children[0].parents.length === 1;
+				// if (oneToOneParent && oneToOneChild) {
+				// 	neighbours = [...node.parents, ...node.children];
+				// } else if (oneToOneParent) {
+				// 	neighbours = node.parents;
+				// } else if (oneToOneChild) {
+				// 	neighbours = node.children;
+				// } else if (node.parents.length) {
+				// 	neighbours = node.parents;
+				// } else {
+				// 	neighbours = node.children;
+				// }
 
-				for (let neighbour of neighbours) {
-					// Only use non-dummy node for attraction, unless all neighbouring nodes are dummies
-					// if (!neighboursAreDummies && isDummy(neighbour)) continue;
-
-					let force = (previous.get(neighbour) - previous.get(node)) * FORCE;
+				for (let neighbour of node.parents) {
+					let displacement = previous.get(neighbour) - previous.get(node);
+					let importantRelation = node.parents.length === 1 && node.parents[0].children.length === 1;
+					let force = displacement * (importantRelation ? STRONG_FORCE : WEAK_FORCE);
+					gradients.set(node, gradients.get(node) + force);
+				}
+				for (let neighbour of node.children) {
+					let displacement = previous.get(neighbour) - previous.get(node);
+					let importantRelation = node.children.length === 1 && node.children[0].parents.length === 1;
+					let force = displacement * (importantRelation ? STRONG_FORCE : WEAK_FORCE);
 					gradients.set(node, gradients.get(node) + force);
 				}
 			}
+		}
+
+		for (let level = 0; level < layers.length; level++) {
+			let layer = layers[level];
 
 			let j;
 			let blockIndex = 0;
@@ -135,10 +152,18 @@ export default function(graph, options = {}) {
 			let block = layer.slice(blockIndex, j);
 			let average = block.reduce((g, n) => g + gradients.get(n), 0) / block.length;
 			for (let node of block) gradients.set(node, average);
-
-			// Translate all nodes with their calculated gradient
-			for (let [node, gradient] of gradients) node.position[1] += gradient;
 		}
+
+		// Translate all nodes with their calculated gradient
+		for (let [node, gradient] of gradients) node.position[1] += gradient;
+
+		// if (i === 100) {
+		// 	debugger;
+		// }
+		// console.log('----');
+		// for (let [node, gradient] of gradients.entries()) {
+		// 	console.log(node.element && node.element.description, gradient.toFixed(2));
+		// }
 	}
 
 	return graph;

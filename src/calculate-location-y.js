@@ -6,7 +6,7 @@ function balance(edges1, edges2) {
 
 	let balance = 0;
 	for (let i = 0; i < edges1.length; ++i) {
-		for (let j = i; j < edges2.length; ++j) {
+		for (let j = 0; j < edges2.length; ++j) {
 			balance += Math.sign(edges1[i] - edges2[j]);
 		}
 	}
@@ -15,7 +15,6 @@ function balance(edges1, edges2) {
 
 export default function(graph) {
 	// Group all nodes by layer
-
 	let level = 0;
 	let layers = [];
 	do {
@@ -38,8 +37,9 @@ export default function(graph) {
 	for (let node of graph.nodes) {
 		let childSum = node.children.reduce((s, p) => (s += order.get(p)), 0);
 		let parentSum = node.parents.reduce((s, p) => (s += order.get(p)), 0);
-		let average = (childSum + parentSum) / (node.children.length + node.parents.length);
-		positions.set(node, average);
+		let childAvg = childSum === 0 ? childSum : childSum / node.children.length;
+		let parentAvg = parentSum === 0 ? parentSum : parentSum / node.parents.length;
+		positions.set(node, childAvg + parentAvg);
 	}
 
 	// Assign a new order based on the average positions
@@ -50,7 +50,8 @@ export default function(graph) {
 		}
 	}
 
-	// Loop through all the layers
+	// Loop through all the layers and swap if necessary
+	// Solution can still be suboptimal, so another strategy is to be considered?
 	for (let j = 0; j < layers.length; ++j) {
 		let layer = layers[j];
 
@@ -69,6 +70,7 @@ export default function(graph) {
 
 		let swap;
 		do {
+			swap = false;
 			for (let i = 0; i <= layer.length - 2; ++i) {
 				let topNodeChildEdges = childEdges.get(layer[i]);
 				let topNodeParentEdges = parentEdges.get(layer[i]);
@@ -76,7 +78,7 @@ export default function(graph) {
 				let bottomNodeChildEdges = childEdges.get(layer[i + 1]);
 				let bottomNodeParentEdges = parentEdges.get(layer[i + 1]);
 
-				let childBalance = balance(topNodeChildEdges, bottomNodeChildEdges);
+				let childBalance = 0; //balance(topNodeChildEdges, bottomNodeChildEdges);
 				let parentBalance = balance(topNodeParentEdges, bottomNodeParentEdges);
 
 				if (childBalance + parentBalance > 0) {
