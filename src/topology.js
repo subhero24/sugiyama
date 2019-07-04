@@ -52,8 +52,8 @@ let descendents = node => {
 	return node.descendents;
 };
 
-export default function(elements, fns) {
-	let { childFunc, parentFunc } = fns;
+export default function(elements, options = {}) {
+	let { childFunc, parentFunc } = options;
 
 	if (childFunc == undefined && parentFunc == undefined) {
 		throw new Error('Could not create topology without childFunc or parentFunc');

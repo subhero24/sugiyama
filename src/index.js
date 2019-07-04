@@ -1,24 +1,40 @@
-import shift from './shift';
 import topology from './topology';
 import minimize from './minimize';
 import normalize from './normalize';
-import calculateBounds from './calculate-bounds';
-import calculateLocationX from './calculate-location-x';
-import calculateLocationY from './calculate-location-y';
-import calculateCoordinates from './calculate-coordinates';
+import straighten from './straighten';
+import calculateLocation from './calculate-location';
+import calculatePosition from './calculate-position';
 
-export default function(elements, fns) {
-	let { childrenFunc, parentFunc, dimensions, margins, iterations } = fns;
+export default function(elements, options) {
+	let { childrenFunc, parentFunc, margins = 1, dimensions = 0, iterations = 100 } = options;
 
-	let graph = topology(elements, { childrenFunc, parentFunc });
+	// dimension is expected to be a function that returns an array for reach node
+	if (typeof dimensions === 'number') {
+		dimensions = () => [dimensions, dimensions];
+	} else if (typeof dimensions === 'object') {
+		dimensions = () => dimensions;
+	}
 
-	minimize(graph);
-	calculateLocationX(graph);
-	normalize(graph);
-	calculateLocationY(graph);
-	calculateCoordinates(graph, { dimensions, margins, iterations });
-	calculateBounds(graph, { margins });
-	shift(graph);
+	// margins is expected to be an array for horizontal and vertical margin
+	if (typeof margins === 'number') {
+		margins = [margins, margins];
+	}
+
+	// Start calculating the layout
+	let graph;
+
+	// Calculates the topology which is an object like { nodes: [{ element, parents, children, ancestors, descendents }] }
+	graph = topology(elements, { childrenFunc, parentFunc });
+	// Removes unnecessary edges between nodes that are also connected through intermediate nodes
+	graph = minimize(graph);
+	// Find the location of all nodes
+	graph = calculateLocation(graph);
+	// Calculate the position of all nodes
+	graph = calculatePosition(graph, { margins, dimensions, iterations });
+	// Clean up edges that are not straight that can be straightened without relayout
+	graph = straighten(graph, { margins });
+	// Normalize all node positions
+	graph = normalize(graph, { margins });
 
 	return graph;
 }

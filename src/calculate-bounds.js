@@ -2,9 +2,6 @@ export default (graph, options = {}) => {
 	let { margins } = options;
 
 	if (margins == undefined) margins = 1;
-	if (typeof margins === 'number') {
-		margins = [margins, margins];
-	}
 
 	graph.margins = margins;
 	for (let node of graph.nodes) {

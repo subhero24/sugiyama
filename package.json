@@ -16,6 +16,6 @@
 	"scripts": {
 		"build": "yarn run roller",
 		"prepare": "yarn run build",
-		"develop": "yarn run parcel src/render/index.html --out-dir build  --open"
+		"develop": "yarn run parcel src/render/index.html --out-dir build --cache-dir /tmp/sugiyama --open"
 	}
 }

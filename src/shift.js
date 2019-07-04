@@ -1,9 +1,4 @@
-// Shifts all nodes to vertically center the graph around the node in the first layer (x = 0)
-// that is closest to the vertical center of the graph
-
-export default function(graph) {
-	if (graph.bounds == undefined) return graph;
-
+export default graph => {
 	let { bounds, nodes } = graph;
 	let { minY, maxY } = bounds;
 
@@ -28,4 +23,6 @@ export default function(graph) {
 		graph.bounds.minY -= shift;
 		graph.bounds.maxY -= shift;
 	}
-}
+
+	return graph;
+};
