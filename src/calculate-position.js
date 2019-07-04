@@ -10,11 +10,7 @@ const FORCE = 0.1; // Must be smaller than 1 to avoid divergence
 // which can increase the force of the springs and make the solution unstable
 
 export default function(graph, options = {}) {
-	let { dimensions, margins, iterations } = options;
-
-	if (margins == undefined) margins = 1;
-	if (dimensions == undefined) dimensions = 0;
-	if (iterations == undefined) iterations = 100;
+	let { dimensions = () => [0, 0], margins = [1, 1], iterations = 100 } = options;
 
 	for (let node of graph.nodes) {
 		node.dimensions = dimensions(node.element);
@@ -38,8 +34,8 @@ export default function(graph, options = {}) {
 	}
 
 	// Iterate, find gradients
+	let gradients = new Map();
 	for (let i = 0; i < iterations; ++i) {
-		let gradients = new Map();
 		for (let node of graph.nodes) {
 			gradients.set(node, 0);
 

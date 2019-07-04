@@ -1,3 +1,4 @@
+import clean from './clean';
 import topology from './topology';
 import minimize from './minimize';
 import normalize from './normalize';
@@ -26,9 +27,11 @@ export default function(elements, options) {
 	// Calculates the topology which is an object like { nodes: [{ element, parents, children, ancestors, descendents }] }
 	graph = topology(elements, { childrenFunc, parentFunc });
 	// Removes unnecessary edges between nodes that are also connected through intermediate nodes
-	graph = minimize(graph);
+	graph = clean(graph);
 	// Find the location of all nodes
 	graph = calculateLocation(graph);
+	// Mimimize crossing
+	graph = minimize(graph);
 	// Calculate the position of all nodes
 	graph = calculatePosition(graph, { margins, dimensions, iterations });
 	// Clean up edges that are not straight that can be straightened without relayout

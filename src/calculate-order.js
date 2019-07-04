@@ -20,11 +20,14 @@ export default function(graph) {
 		let layerIndex = node.location[0];
 		let layer = graph.layers[layerIndex];
 		if (layer) {
+			node.layer = layer;
 			node.location[1] = layer.length;
+
 			layer.push(node);
 		} else {
+			node.layer = [node];
 			node.location[1] = 0;
-			graph.layers[layerIndex] = [node];
+			graph.layers[layerIndex] = node.layer;
 		}
 	}
 
@@ -36,14 +39,12 @@ export default function(graph) {
 		let childAvg = childSum === 0 ? childSum : childSum / node.children.length;
 		let parentAvg = parentSum === 0 ? parentSum : parentSum / node.parents.length;
 		positions.set(node, childAvg + parentAvg);
-		let x;
 	}
 
-	// Assign a new order based on the average positions
-	for (let j = 0; j < graph.layers.length; ++j) {
-		graph.layers[j] = graph.layers[j].sort((a, b) => positions.get(a) - positions.get(b));
-		for (let i = 0; i < graph.layers[j].length; ++i) {
-			graph.layers[j][i].location[1] = i;
+	for (let layer of graph.layers) {
+		let sortedLayer = layer.sort((a, b) => positions.get(a) - positions.get(b));
+		for (let i = 0; i < sortedLayer.length; ++i) {
+			sortedLayer[i].location[1] = i;
 		}
 	}
 

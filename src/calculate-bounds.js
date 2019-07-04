@@ -1,7 +1,5 @@
 export default (graph, options = {}) => {
-	let { margins } = options;
-
-	if (margins == undefined) margins = 1;
+	let { margins = [1, 1] } = options;
 
 	graph.margins = margins;
 	for (let node of graph.nodes) {
